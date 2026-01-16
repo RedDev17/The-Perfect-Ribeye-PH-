@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Send, MapPin, Phone, User, CreditCard, FileText } from 'lucide-react';
+import { ArrowLeft, Send, MapPin, Phone, User, CreditCard, FileText, Calendar, Clock } from 'lucide-react';
 import { CartItem, PaymentMethod } from '../types';
 import { usePaymentMethods } from '../hooks/usePaymentMethods';
 
@@ -14,8 +14,24 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
   const [customerName, setCustomerName] = useState('');
   const [contactNumber, setContactNumber] = useState('');
   const [address, setAddress] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState('');
+  const [deliveryTime, setDeliveryTime] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash');
   const [notes, setNotes] = useState('');
+
+  // Get minimum date (tomorrow)
+  const getMinDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  };
+
+  // Time slot options
+  const timeSlots = [
+    { value: 'morning', label: '🌅 Morning (8:00 AM - 12:00 PM)' },
+    { value: 'afternoon', label: '☀️ Afternoon (12:00 PM - 5:00 PM)' },
+    { value: 'evening', label: '🌙 Evening (5:00 PM - 8:00 PM)' },
+  ];
 
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -49,7 +65,24 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
     }).join('\n');
   };
 
+  // Format date for display
+  const formatDeliveryDate = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  };
+
+  // Get time slot label
+  const getTimeSlotLabel = (value: string) => {
+    const slot = timeSlots.find(s => s.value === value);
+    return slot ? slot.label : value;
+  };
+
   const handleSendOrder = () => {
+    const deliveryInfo = deliveryDate || deliveryTime 
+      ? `\n📅 𝗣𝗿𝗲𝗳𝗲𝗿𝗿𝗲𝗱 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝘆:\n${deliveryDate ? `Date: ${formatDeliveryDate(deliveryDate)}` : ''}${deliveryDate && deliveryTime ? '\n' : ''}${deliveryTime ? `Time: ${getTimeSlotLabel(deliveryTime)}` : ''}\n`
+      : '';
+
     const orderMessage = `
 🥩 THE PERFECT RIBEYE PH - ORDER FORM 🥩
 
@@ -70,7 +103,7 @@ ${contactNumber}
 
 📍 𝗔𝗱𝗱𝗿𝗲𝘀𝘀: 
 ${address}
-
+${deliveryInfo}
 ${notes ? `📝 𝗡𝗼𝘁𝗲𝘀: ${notes}` : ''}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -271,7 +304,7 @@ Thank you for choosing The Perfect Ribeye PH! 🥩🔥
                   {/* Payment Account Details or COD Message */}
                   {selectedPaymentMethod && (
                     <div className="mt-4 p-4 bg-gradient-to-br from-gray-900/80 to-gray-900/50 rounded-xl border border-gray-700/50">
-                      {selectedPaymentMethod.id.includes('cod') || selectedPaymentMethod.id.includes('cash') ? (
+                      {selectedPaymentMethod.id.includes('cod') || (selectedPaymentMethod.id.includes('cash') && !selectedPaymentMethod.id.includes('gcash')) || selectedPaymentMethod.id === 'cash' ? (
                         /* Cash on Delivery Message */
                         <div className="flex items-center space-x-3">
                           <div className="w-12 h-12 bg-green-600/20 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -362,6 +395,43 @@ Thank you for choosing The Perfect Ribeye PH! 🥩🔥
                     rows={2}
                     required
                   />
+                </div>
+
+                {/* Delivery Scheduling */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="flex items-center space-x-2 text-sm font-semibold text-white mb-2">
+                      <Calendar className="w-4 h-4 text-red-400" />
+                      <span>Preferred Delivery Date</span>
+                      <span className="text-gray-500 text-xs font-normal">(Optional)</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={deliveryDate}
+                      onChange={(e) => setDeliveryDate(e.target.value)}
+                      min={getMinDate()}
+                      className="w-full px-4 py-3.5 bg-gray-800/50 border border-gray-700 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 text-white placeholder-gray-500 text-sm [color-scheme:dark]"
+                    />
+                  </div>
+                  <div>
+                    <label className="flex items-center space-x-2 text-sm font-semibold text-white mb-2">
+                      <Clock className="w-4 h-4 text-red-400" />
+                      <span>Preferred Time Slot</span>
+                      <span className="text-gray-500 text-xs font-normal">(Optional)</span>
+                    </label>
+                    <select
+                      value={deliveryTime}
+                      onChange={(e) => setDeliveryTime(e.target.value)}
+                      className="w-full px-4 py-3.5 bg-gray-800/50 border border-gray-700 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 text-white text-sm appearance-none cursor-pointer"
+                    >
+                      <option value="" className="bg-gray-800">Select a time slot</option>
+                      {timeSlots.map((slot) => (
+                        <option key={slot.value} value={slot.value} className="bg-gray-800">
+                          {slot.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
 
